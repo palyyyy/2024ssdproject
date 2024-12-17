@@ -1,11 +1,11 @@
 import React from "react";
-import Auth from "./components/Auth";
+import Auth from "./components/Auth"; // Correct path to Auth component
 
 function App() {
   return (
     <div>
-      <h1>Freelance Requests App</h1>
-      <Auth />
+      <h1>QuoteRequest</h1>
+      <Auth /> {/* Sign-in component */}
     </div>
   );
 }
