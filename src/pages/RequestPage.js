@@ -1,35 +1,73 @@
-import React, { useState } from "react";
-import { Container, TextField, Button, Typography, Box, Paper } from "@mui/material";
-import { db, storage } from "../firebase/firebase";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { auth, db, storage } from "../firebase/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { TextField, Button, Box, Container, Typography, Paper, Alert } from "@mui/material";
 
 const RequestPage = () => {
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
   const [file, setFile] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();
+  const adminUID = "BdUOYS3PeMfqDQIcJFqK2Ga2Hqr1"; // Hardcoded Admin UID
+
+  useEffect(() => {
+    const checkAdmin = () => {
+      const user = auth.currentUser;
+
+      if (user && user.uid === adminUID) {
+        console.log("Admin user detected, redirecting to Admin Dashboard.");
+        navigate("/admin");
+      } else {
+        console.log("Non-admin user, staying on the Request Page.");
+      }
+    };
+
+    checkAdmin();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!name || !email || !message) {
+      setErrorMessage("Please fill in all mandatory fields: Name, Email, and Message.");
+      return;
+    }
+
     try {
       let fileURL = "";
+
+      // Upload file if provided
       if (file) {
-        const fileRef = ref(storage, `files/${file.name}`);
-        await uploadBytes(fileRef, file);
-        fileURL = await getDownloadURL(fileRef);
+        const fileRef = ref(storage, `requests/${file.name}`);
+        const uploadResult = await uploadBytes(fileRef, file);
+        fileURL = await getDownloadURL(uploadResult.ref);
       }
 
+      // Add request to Firestore
       await addDoc(collection(db, "requests"), {
-        description,
-        fileURL,
+        name,
+        email,
+        message,
+        fileURL: fileURL || "No file uploaded", // Default if no file is uploaded
         status: "pending",
         createdAt: new Date(),
       });
 
-      alert("Request submitted successfully!");
-      setDescription("");
+      // Reset form fields
+      setName("");
+      setEmail("");
+      setMessage("");
       setFile(null);
+      setErrorMessage("");
+      setSuccessMessage("Your request has been successfully submitted!");
     } catch (error) {
       console.error("Error submitting request:", error.message);
+      setErrorMessage("An error occurred while submitting your request. Please try again.");
     }
   };
 
@@ -41,12 +79,33 @@ const RequestPage = () => {
         </Typography>
         <form onSubmit={handleSubmit}>
           <TextField
-            label="Description"
+            label="Name"
             variant="outlined"
             fullWidth
             margin="normal"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <TextField
+            label="Email"
+            type="email"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <TextField
+            label="Message"
+            variant="outlined"
+            fullWidth
+            multiline
+            rows={4}
+            margin="normal"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
             required
           />
           <TextField
@@ -61,6 +120,16 @@ const RequestPage = () => {
             </Button>
           </Box>
         </form>
+        {successMessage && (
+          <Box mt={3}>
+            <Alert severity="success">{successMessage}</Alert>
+          </Box>
+        )}
+        {errorMessage && (
+          <Box mt={3}>
+            <Alert severity="error">{errorMessage}</Alert>
+          </Box>
+        )}
       </Paper>
     </Container>
   );
