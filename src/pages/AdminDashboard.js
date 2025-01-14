@@ -9,9 +9,11 @@ import {
   Paper,
   Typography,
   Box,
+  Button,
 } from "@mui/material";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
+import emailjs from "emailjs-com";
 
 const AdminDashboard = () => {
   const [requests, setRequests] = useState([]);
@@ -36,6 +38,52 @@ const AdminDashboard = () => {
     fetchRequests();
   }, []);
 
+  const sendEmail = (email, name, status) => {
+    const templateParams = {
+      user_email: email,
+      user_name: name,
+      request_status: status,
+    };
+
+    emailjs
+      .send(
+        "service_wek7wl1", // Replace with your EmailJS service ID
+        "template_vt5s38z", // Replace with your EmailJS template ID
+        templateParams,
+        "F3AVQvfrTgdWIFOt4oV_F" // Replace with your EmailJS user ID
+      )
+      .then(
+        (result) => {
+          console.log("Email sent successfully:", result.text);
+        },
+        (error) => {
+          console.error("Error sending email:", error.text);
+        }
+      );
+  };
+
+  const handleDecision = async (id, email, name, status) => {
+    try {
+      // Update the request status in Firestore
+      const requestRef = doc(db, "requests", id);
+      await updateDoc(requestRef, {
+        status,
+      });
+
+      // Send email notification
+      sendEmail(email, name, status);
+
+      // Update the state to reflect the new status
+      setRequests((prevRequests) =>
+        prevRequests.map((request) =>
+          request.id === id ? { ...request, status } : request
+        )
+      );
+    } catch (error) {
+      console.error("Error updating request status:", error.message);
+    }
+  };
+
   return (
     <Box p={3}>
       <Typography variant="h4" gutterBottom>
@@ -53,6 +101,7 @@ const AdminDashboard = () => {
                 <TableCell><strong>Message</strong></TableCell>
                 <TableCell><strong>File</strong></TableCell>
                 <TableCell><strong>Status</strong></TableCell>
+                <TableCell><strong>Actions</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -75,6 +124,27 @@ const AdminDashboard = () => {
                     )}
                   </TableCell>
                   <TableCell>{request.status}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={() =>
+                        handleDecision(request.id, request.email, request.name, "accepted")
+                      }
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() =>
+                        handleDecision(request.id, request.email, request.name, "declined")
+                      }
+                      style={{ marginLeft: "8px" }}
+                    >
+                      Decline
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

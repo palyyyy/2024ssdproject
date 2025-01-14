@@ -16,6 +16,9 @@ const App = () => {
   const adminUID = "BdUOYS3PeMfqDQIcJFqK2Ga2Hqr1"; // Hardcoded Admin UID
 
   useEffect(() => {
+    // Set the tab name
+    document.title = "QuoteRequest";
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         console.log("Authenticated user:", currentUser.uid);
