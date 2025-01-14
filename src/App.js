@@ -13,12 +13,20 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const adminUID = "BdUOYS3PeMfqDQIcJFqK2Ga2Hqr1"; // Hardcoded Admin UID
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         console.log("Authenticated user:", currentUser.uid);
         setUser(currentUser);
+
+        // Hardcoded admin check
+        if (currentUser.uid === adminUID) {
+          console.log("Admin detected via hardcoded UID.");
+          setIsAdmin(true);
+          return; // Skip Firestore check for admin
+        }
 
         try {
           const userRef = doc(db, "users", currentUser.uid);
@@ -56,17 +64,15 @@ const App = () => {
       {user ? (
         <AppBarLayout>
           <Routes>
-            {/* Admin Routes */}
-            {isAdmin && (
+            {/* Redirect admin to Admin Dashboard */}
+            {isAdmin ? (
               <>
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="*" element={<Navigate to="/admin" />} />
               </>
-            )}
-
-            {/* User Routes */}
-            {!isAdmin && (
+            ) : (
               <>
+                {/* User Routes */}
                 <Route path="/request" element={<RequestPage />} />
                 <Route path="/request-sent" element={<RequestSentPage />} />
                 <Route path="*" element={<Navigate to="/request" />} />

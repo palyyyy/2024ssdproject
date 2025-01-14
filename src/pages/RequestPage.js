@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { auth, db, storage } from "../firebase/firebase";
+import React, { useState } from "react";
+import { db, storage } from "../firebase/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { TextField, Button, Box, Container, Typography, Paper, Alert } from "@mui/material";
@@ -12,23 +11,6 @@ const RequestPage = () => {
   const [file, setFile] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const navigate = useNavigate();
-  const adminUID = "BdUOYS3PeMfqDQIcJFqK2Ga2Hqr1"; // Hardcoded Admin UID
-
-  useEffect(() => {
-    const checkAdmin = () => {
-      const user = auth.currentUser;
-
-      if (user && user.uid === adminUID) {
-        console.log("Admin user detected, redirecting to Admin Dashboard.");
-        navigate("/admin");
-      } else {
-        console.log("Non-admin user, staying on the Request Page.");
-      }
-    };
-
-    checkAdmin();
-  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
